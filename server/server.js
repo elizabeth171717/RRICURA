@@ -6,7 +6,7 @@ const app = express();
 const PORT = 5001;
 
 // Initialize Stripe with your secret key
-const stripe = new Stripe('sk_test_51QBgjIEfaZC1SjSN59Hb5KV16SqZZFetnxmEllxK84ZQRYj7RlprC2RkK5yT30KI5oz7FCI4wLaewlprE0Qbh26v00XZXsYoCH'); // Replace with your Stripe secret key
+const stripe = new Stripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY); // Replace with your Stripe secret key
 
 app.use(cors({ origin: "http://localhost:5173" })); // Replace with your frontend's port if different
 

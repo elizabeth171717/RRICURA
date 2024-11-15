@@ -9,9 +9,7 @@ import {
 } from "@stripe/react-stripe-js";
 import PropTypes from "prop-types";
 
-const stripePromise = loadStripe(
-  "pk_test_51QBgjIEfaZC1SjSN6phqZUGTDxgkdqBItgYs34nzwSGu9UTzuNE83UbgfGEx3l4Tz13h6zlTRDxYBcugxci02zKP00yM0S9PA2"
-);
+const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
 
 function PaymentForm({ amount }) {
   const stripe = useStripe();
