@@ -1,23 +1,39 @@
-// src/App.jsx
 import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import OrderPage from "./pages/OrderPage";
 import CartPage from "./pages/CartPage";
 import TamaleDetailPage from "./components/TamaleDetailPage";
-import CheckoutPage from "./pages/CheckoutPage"; // Import CheckoutPage
-import PaymentPage from "./pages/PaymentPage"; // Import PaymentPage
-import ThankYouPage from "./pages/ThankYouPage"; // Import ThankYouPage
+import CheckoutPage from "./pages/CheckoutPage";
+import PaymentPage from "./pages/PaymentPage";
+import ThankYouPage from "./pages/ThankYouPage";
 
 function App() {
+  // Cart state initialized from localStorage
   const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem("cart");
-    return savedCart ? JSON.parse(savedCart) : [];
+    try {
+      const savedCart = localStorage.getItem("cart");
+      return savedCart ? JSON.parse(savedCart) : [];
+    } catch (error) {
+      console.error("Error loading cart from localStorage:", error);
+      return [];
+    }
   });
 
+  // Sync cart with localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cart));
+    try {
+      localStorage.setItem("cart", JSON.stringify(cart));
+    } catch (error) {
+      console.error("Error saving cart to localStorage:", error);
+    }
   }, [cart]);
+
+  // Clear cart completely
+  const clearCart = () => {
+    setCart([]); // Update state
+    localStorage.removeItem("cart"); // Sync with localStorage
+  };
 
   // Array of tamales
   const tamales = [
@@ -79,6 +95,7 @@ function App() {
     },
   ];
 
+  // Add an item to the cart
   const addToCart = (item) => {
     const existingItem = cart.find((cartItem) => cartItem.id === item.id);
     if (existingItem) {
@@ -94,6 +111,7 @@ function App() {
     }
   };
 
+  // Update the quantity of an item in the cart
   const updateCartItem = (id, newQuantity) => {
     setCart(
       cart.map((item) =>
@@ -102,9 +120,28 @@ function App() {
     );
   };
 
+  // Remove an item from the cart
   const removeCartItem = (id) => {
     setCart(cart.filter((item) => item.id !== id));
   };
+
+  // Calculate subtotal
+  const subtotal = cart.reduce(
+    (sum, item) => sum + (item.price * item.quantity) / 6,
+    0
+  );
+
+  // Calculate tax (8% of subtotal)
+  const tax = subtotal * 0.08;
+
+  // Assume a fixed delivery fee for simplicity
+  const deliveryFee = 5.0; // Modify this logic if you have dynamic delivery fees
+
+  // Assume a tip calculation (e.g., 10%, 15%, 18%, or custom)
+  const tip = 0; // This can be dynamically set based on user input on the CheckoutPage
+
+  // Calculate total
+  const total = subtotal + tax + deliveryFee + tip;
 
   return (
     <Router>
@@ -141,27 +178,11 @@ function App() {
           />
           <Route
             path="/checkout"
-            element={
-              <CheckoutPage
-                cart={cart}
-                subtotal={cart.reduce(
-                  (sum, item) => sum + (item.price * item.quantity) / 6,
-                  0
-                )}
-              />
-            }
+            element={<CheckoutPage cart={cart} subtotal={subtotal} />}
           />
-
           <Route
             path="/payment"
-            element={
-              <PaymentPage
-                total={cart.reduce(
-                  (sum, item) => sum + (item.price * item.quantity) / 6,
-                  0
-                )}
-              />
-            }
+            element={<PaymentPage total={total} clearCart={clearCart} />}
           />
           <Route path="/thank-you" element={<ThankYouPage />} />
         </Routes>

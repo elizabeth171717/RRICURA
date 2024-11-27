@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import DeliveryDetailsComponent from "../components/DeliveryDetailsComponent";
 import TipSection from "../components/TipSection";
-import { useNavigate, Link } from "react-router-dom"; // Import Link and useNavigate
+import { useNavigate, Link } from "react-router-dom";
 
 function CheckoutPage({ cart, subtotal }) {
   const [deliveryDetails, setDeliveryDetails] = useState(null);
@@ -11,7 +11,7 @@ function CheckoutPage({ cart, subtotal }) {
   const [tax, setTax] = useState(0);
   const [deliveryFee, setDeliveryFee] = useState(0);
 
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   // Calculate tax based on subtotal
   useEffect(() => {
@@ -35,11 +35,8 @@ function CheckoutPage({ cart, subtotal }) {
       return;
     }
 
-    const total =
-      subtotal + (deliveryFee !== "Out of range" ? deliveryFee : 0) + tax + tip;
-
-    // Navigate to PaymentPage with the total amount
-    navigate("/payment", { state: { total } });
+    const total = subtotal + deliveryFee + tax + tip; // Ensure tip is added here
+    navigate("/payment", { state: { total } }); // Pass the correct total
   };
 
   return (

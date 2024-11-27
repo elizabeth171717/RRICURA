@@ -8,10 +8,11 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import PropTypes from "prop-types";
+import { useLocation } from "react-router-dom"; // Ensure this is added
 
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
-function PaymentForm({ amount }) {
+function PaymentForm({ amount, clearCart }) {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
@@ -20,19 +21,27 @@ function PaymentForm({ amount }) {
   const [clientSecret, setClientSecret] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:5001/api/create-payment-intent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: amount * 100 }), // Convert dollars to cents
-    })
-      .then((res) => {
-        if (!res.ok) {
+    async function createPaymentIntent() {
+      try {
+        const response = await fetch(
+          "http://localhost:5001/api/create-payment-intent",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ amount: amount * 100 }), // Convert dollars to cents
+          }
+        );
+
+        if (!response.ok) {
           throw new Error("Failed to create Payment Intent.");
         }
-        return res.json();
-      })
-      .then((data) => setClientSecret(data.clientSecret))
-      .catch((error) => setErrorMessage(error.message));
+        const data = await response.json();
+        setClientSecret(data.clientSecret);
+      } catch (error) {
+        setErrorMessage(error.message);
+      }
+    }
+    createPaymentIntent();
   }, [amount]);
 
   const handleSubmit = async (event) => {
@@ -49,29 +58,29 @@ function PaymentForm({ amount }) {
       return;
     }
 
-    const { error, paymentIntent } = await stripe.confirmCardPayment(
-      clientSecret,
-      {
-        payment_method: {
-          card: cardElement,
-        },
+    try {
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        { payment_method: { card: cardElement } }
+      );
+
+      if (error) {
+        throw new Error(error.message);
       }
-    );
 
-    if (error) {
+      if (paymentIntent.status === "succeeded") {
+        console.log("Payment successful!", paymentIntent);
+
+        // Clear cart after payment
+        clearCart(); // Call clearCart from props
+
+        // Redirect to ThankYouPage
+        navigate("/thank-you");
+      } else {
+        console.log("Payment status:", paymentIntent.status);
+      }
+    } catch (error) {
       setErrorMessage(error.message);
-      setIsLoading(false);
-    } else if (paymentIntent.status === "succeeded") {
-      console.log("Payment successful!", paymentIntent);
-
-      // Clear the cart from local storage
-      localStorage.removeItem("cart");
-
-      // Redirect to Thank You page
-      navigate("/thank-you");
-      setErrorMessage("");
-    } else {
-      setErrorMessage("Payment did not complete.");
     }
     setIsLoading(false);
   };
@@ -89,19 +98,30 @@ function PaymentForm({ amount }) {
 
 PaymentForm.propTypes = {
   amount: PropTypes.number.isRequired,
+  clearCart: PropTypes.func.isRequired,
 };
 
-function PaymentPage({ total }) {
+function PaymentPage({ clearCart }) {
+  const location = useLocation();
+  const { total } = location.state || {}; // Ensure total is accessed
+
+  if (total === undefined) {
+    return <p>Error: Total not provided!</p>; // Error fallback if total is missing
+  }
+
   return (
     <Elements stripe={stripePromise}>
       <h2>Payment</h2>
-      <PaymentForm amount={total} />
+      <p>Total: ${total.toFixed(2)}</p> {/* Display the total correctly */}
+      <PaymentForm amount={total} clearCart={clearCart} />{" "}
+      {/* Pass total to PaymentForm */}
     </Elements>
   );
 }
 
 PaymentPage.propTypes = {
   total: PropTypes.number.isRequired,
+  clearCart: PropTypes.func.isRequired,
 };
 
 export default PaymentPage;

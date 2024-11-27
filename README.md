@@ -1,2 +1,0 @@
-# RRICURA
-CATERER

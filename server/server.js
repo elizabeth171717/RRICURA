@@ -1,15 +1,23 @@
 import express from 'express';
 import cors from 'cors';
 import Stripe from 'stripe';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: './.env' }); // Ensure this file exists in the same directory
+console.log("Loaded STRIPE_SECRET_KEY:", process.env.STRIPE_SECRET_KEY || "NOT LOADED");
 
 const app = express();
 const PORT = 5001;
 
-// Initialize Stripe with your secret key
-const stripe = new Stripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY); // Replace with your Stripe secret key
+// Initialize Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-app.use(cors({ origin: "http://localhost:5173" })); // Replace with your frontend's port if different
-
+app.use(
+    cors({
+        origin: [/^http:\/\/localhost:\d+$/], // Allow any localhost port for development
+        methods: ["GET", "POST"],
+    })
+);
 
 app.use(express.json());
 
@@ -25,12 +33,10 @@ app.post("/api/create-payment-intent", async (req, res) => {
 
         res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
-        console.error("Error creating PaymentIntent:", error);
+        console.error("Stripe API Error:", error);
         res.status(500).json({ error: error.message });
     }
 });
-
-
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
