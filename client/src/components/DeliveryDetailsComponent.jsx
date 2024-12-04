@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
+
 import axios from "axios";
+
 import { debounce } from "lodash";
 
 const LOCATIONIQ_API_KEY = "pk.8570160733c4312003964837baa68a2a";
